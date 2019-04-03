@@ -67,9 +67,9 @@ The first time, Duplicity will return a URL, click the link, log in and paste th
 $ GOOGLE_DRIVE_SETTINGS=/home/aberral/.duplicity/credentials duplicity --exclude-filelist /home/aberral/.duplicity/excludes ~/ gdocs://[username]@gmail.com/[folder that will contain the backup files]
 ```
 The files in the repo contains:
-  * credentials: my credentials to make the backup
-  * excludes: the file list I wont back up
-  * readme_alberto: some useful commands that are worth noticing
+  * __credentials__: my credentials to make the backup
+  * __excludes__: the file list I wont back up
+  * __readme_alberto__: some useful commands that are worth noticing
     ```{bash}
     # Verify
     sudo GOOGLE_DRIVE_SETTINGS=~/.duplicity/credentials duplicity verify gdocs://aberralgonzalez@usal.es/trinitybu  ~/
@@ -85,10 +85,10 @@ The files in the repo contains:
     sudo GOOGLE_DRIVE_SETTINGS=~/.duplicity/credentials duplicity --file-to-restore apt/sources.list gdocs://aberralgonzalez@usal.es/trinitybu
     /home/user/sources.list
     ```
-  * backup.sh: the file with the commands and the route that config duplicity to back up things
-  * execute.sh: the function that will be executed with crontab to do the backup. It also generates a logfile with the timestamp with the duplicity output.
+  * __backup.sh__: the file with the commands and the route that config duplicity to back up things
+  * __execute.sh__: the function that will be executed with crontab to do the backup. It also generates a logfile with the timestamp with the duplicity output.
  
- NOTE: Don't forget to give the files the right permisions to be properly executed.
+ __NOTE:__ Don't forget to give the files the right permisions to be properly executed.
  # The last step
  The final step is to set crontab to do the automated backcup
  ```{bash}
