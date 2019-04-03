@@ -10,7 +10,7 @@ $ sudo yum install epel-release
 $ sudo yum -y update
 $ sudo yum -y install python-pip
 ```
-# First Step
+# First Steps
 We need to Setup OAth Credentials in Google API.
  * Go to https://console.developers.google.com/
  * Create Project a new project and give it some sensible name like “Duplicity Backup”
