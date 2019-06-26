@@ -1,3 +1,4 @@
+# USAR SUDO -S PARA ACCEDER A LOS FICHEROS Y NO DESMONTAR /MNT/DRIVE
 # Introduction
 ## What is restic?
 
