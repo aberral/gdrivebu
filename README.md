@@ -1,106 +1,141 @@
-# Using Google Drive as a backend for Duplicity and programming with crontab in Centos 7
+# Introduction
+## What is restic?
 
-Duplicity can use Google Drive as a cloud backend for your Linux Workstation backups. These repo was implemented on Centos 7.
+restic is a backup utility written entirely in go. restic is a robust backup solution, known for it’s reliability. It supports remote incremental backups to SFTP, Amazon S3, Google Cloud Storage, Microsoft Azure and many other services. restic encrypts backups on the fly.
 
-# Required software
-First, we need to install python and pip, or update them in case we have installed previously both.
-```{bash}
-# Enabling epel repository
-$ sudo yum install epel-release
-$ sudo yum -y update
-$ sudo yum -y install python-pip
-```
-# First Steps
-We need to Setup OAth Credentials in Google API.
- * Go to https://console.developers.google.com/
- * Create Project a new project and give it some sensible name like “Duplicity Backup”
- * From the Dashboard click on “Enable API”
- * Search for “Google Drive”, select and enable it
- * Select “Credentials” from the panel on the left
- * Use the arrow on the Create Credentials button (the blue one) to select “OAuth Client ID”
- * For Application Type, select “Other” and name the client. I used “Duplicity”. Click Create.
- * Save your credentials somewhere safe, although they can easily be regenerated (you can download them).
- 
- # Configure Duplicity
- ```{bash}
-$ cd /home/aberral
-$ mkdir .duplicity
-$ cd .duplicity
-$ touch credentials
-$ touch excludes
-```
- Paste the following text in your credentials file:
-```{}
-client_config_backend: settings
-client_config:
-   client_id: [id from previous step (GOOGLE)]
-   client_secret: [secret from previous step (GOOGLE)]
-save_credentials: True
-save_credentials_backend: file
-save_credentials_file: gdrive.cache
-get_refresh_token: True
-```
-The excludes file will contain all the files you don't want to back up or ignore. In my case all /data inside my home contains cel files, .rdata, and geo datasets that are large files and will take an eternity to backup. A good starting point is:
-```{}
-**~
-**.bak
-**.cache
-**cache**
-**debuginfo**
-**duplicity-**
-**Trash**
-**.iso
-**/.cache/**
-**/Cache/**
-**/Downloads/**
-**/BUILD/**
-**/Music/**
-**/temp/**
-**/.thumbnails/**
-**/.beagle/**
-```
+## What are the requirements?
 
-# Running Duplicity for the first time
-The first time, Duplicity will return a URL, click the link, log in and paste the code in the shell. With the next command we can backup the home directory to Google drive. The first run is always (unless we specify it) a full backup, and every subsequent run will be incremental.
+Today we’ll be setting up restic in a linux environment – Ubuntu 14 in particular. But in reality you can utilize restic on any platform that is capable of running go since it is cross platform compatible.
+ * A Google Drive account, preferably with unlimited storage for best results.
+ * google-drive-ocamlfuse is required to mount your Google Drive in Ubuntu.
+
+# Configuration
+## Set up Google Drive mount
+
+We start by installing google-drive-ocamlfuse to set up our mount so restic has a location to store backups.
 
 ```{bash}
-$ GOOGLE_DRIVE_SETTINGS=/home/aberral/.duplicity/credentials duplicity --exclude-filelist /home/aberral/.duplicity/excludes ~/ gdocs://[username]@gmail.com/[folder that will contain the backup files]
+sudo add-apt-repository ppa:alessandro-strada/ppa
+sudo apt-get update
+sudo apt-get install google-drive-ocamlfuse
 ```
-The files in the repo contains:
-  * __credentials__: my credentials to make the backup
-  * __excludes__: the file list I wont back up
-  * __readme_alberto__: some useful commands that are worth noticing
-    ```{bash}
-    # Verify
-    sudo GOOGLE_DRIVE_SETTINGS=~/.duplicity/credentials duplicity verify gdocs://aberralgonzalez@usal.es/trinitybu  ~/
-    ## Para ver que archivos han cambiado: ... duplicity -v4 ...
 
-    # List Files in backup
-    sudo GOOGLE_DRIVE_SETTINGS=~/.duplicity/credentials duplicity list-current-files gdocs://aberralgonzalez@usal.es/trinitybu
+If you receive the error **-bash: add-apt-repository: command not found**, you will need to install the below package.
 
-    # Restore
-    sudo GOOGLE_DRIVE_SETTINGS=~/.duplicity/credentials duplicity --file-to-restore  "file to restore" gdocs://aberralgonzalez@usal.es/trinitybu
-    "archivo"
+```{bash}
+sudo apt-get install software-properties-common
+```
 
-    sudo GOOGLE_DRIVE_SETTINGS=~/.duplicity/credentials duplicity --file-to-restore apt/sources.list gdocs://aberralgonzalez@usal.es/trinitybu
-    /home/user/sources.list
-    ```
-  * __backup.sh__: the file with the commands and the route that config duplicity to back up things
-  * __execute.sh__: the function that will be executed with crontab to do the backup. It also generates a logfile with the timestamp with the duplicity output.
- 
- __NOTE:__ Don't forget to give the files the right permisions to be properly executed.
- # The last step
- The final step is to set crontab to do the automated backcup
- ```{bash}
- $ crontab -e
- # We edit the crontab file to add the execute.sh script with the line:
- # @daily echo raistlin1640 | sudo -S /scripts/./execute.sh
- # it will do a daily incremental backup, to google drive and the external HDD, plus a full backup every 90D / 30D to google drive / external HDD
- $ crontab -l
- # To check the task was saved
- ```
- 
- 
- 
- 
- 
+Once installed, run google-drive-ocamlfuse without any arguments to create the required directories.
+```{bash}
+sudo google-drive-ocamlfuse
+```
+
+Next, create the mount folder for our Google Drive.
+```{bash}
+sudo mkdir /mnt/gdrive
+sudo mkdir /mnt/gdrive/restic
+# Importante si algun vez da error de entrada y salida hay que hacer
+sudo umount /mnt/gdrive
+```
+
+Now we need to add configure the Google Drive id and secret key. Please follow these instructions (http://www.iperiusbackup.net/en/how-to-enable-google-drive-api-and-get-client-credentials/) if you do not already have your id and secret key.
+We use the -headless argument since we are configuring directly via SSH. It’s also a good idea to -label your mount – In this case we name it “gdrive”.
+
+```{bash}
+sudo google-drive-ocamlfuse -headless -label gdrive -id <your_id> -secret <your_secret> /mnt/gdrive/restic
+```
+
+You will be asked to open a link in your browser which will essentially allow google-drive-ocamlfuse to access your Google Drive.
+
+Once you have entered your verification token, your Google Drive is mounted as a drive and we can proceed with setting up restic.
+Install and configure restic
+
+# Install and configure restic
+
+Now, let’s install restic. The latest version at the time of writing this tutorial is 0.9.1.
+
+```{bash}
+sudo apt-get install restic
+```
+
+restic requires a repository before it can start backing up – In this case we will be creating a repository in our Google Drive. The repository represents the place it stores backups/snapshots.
+
+```{bash}
+sudo restic init --repo /mnt/gdrive/restic
+```
+
+You will be asked to set a password for the repository. This is the RESTIC_PASSWORD mentioned below. Keep it safe! Without it, you cannot access your backups.
+
+Since we want to perform fully automated backups, restic needs two environment variables. Add these at the bottom of /etc/profile.
+Alternatively, you can add these at the top of your backup shell script (example script is at the bottom of this tutorial).
+
+```{bash}
+export RESTIC_REPOSITORY=/mnt/gdrive/restic
+export RESTIC_PASSWORD=<your_password>
+```
+
+# Backing up
+
+We’re ready to run our first backup! I have chosen to backup my /home, /var/www and /root directories.
+```{bash}
+sudo restic -r $RESTIC_REPOSITORY backup /home /var/www /root
+```
+
+restic will open the repository with the password we created from our /etc/profile and start the backup.
+
+To see your backups/snapshots, run the below command.
+```{bash}
+sudo restic -r $RESTIC_REPOSITORY snapshots
+```
+**INSERTAR IMAGEN DEL COMANDO DE ARRIBA AQUI**
+
+## Deleting old backups
+
+Depending on how much space you have available on your Google Drive, we want to set up some policies on how many backups we want to keep.
+In this example, we will keep 30 days of backups, but you can change the below number to anything you’d like.
+
+```{bash}
+sudo restic -r $RESTIC_REPOSITORY forget --keep-last 30 --prune
+```
+
+## Automating your backups
+
+Here is my very simple shell script that runs every night. It back ups my directories and enforces the policies for old backups.
+
+```{bash}
+#!/bin/sh
+
+export RESTIC_REPOSITORY=/mnt/gdrive/restic
+export RESTIC_PASSWORD=<your_password>
+
+# Perform restic backup 
+restic -r $RESTIC_REPOSITORY backup /home /var/www /root
+
+# Keep 30 backups and delete old + prune older snapshots
+restic -r $RESTIC_REPOSITORY forget --keep-last 30 --prune
+```
+
+Add a cron job that runs the script at 5 minutes past midnight every day.
+```{bash}
+sudo crontab -e
+```
+```{bash}
+05 00 * * * /home/backups/backup.sh
+```
+
+Ensure that your script is executable by running below command. Otherwise the cron job will not run as expected.
+```{bash}
+chmod +x /home/backups/backup.sh
+```
+
+# Final words
+
+restic is incredibly robust and reliable. The possibilites are endless. It would not require much configuration to perform hot backups of a MySQL database which can be sent to a Google Drive along with the before mentioned folders.
+
+Let me know how you work with restic! I would love to hear if this tutorial has helped you in any way!
+Leave a comment 🙂
+
+# Credits
+
+https://jakobkofod.com/automated-restic-backups-google-drive/
