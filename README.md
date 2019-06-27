@@ -90,6 +90,8 @@ To see your backups/snapshots, run the below command.
 sudo restic -r $RESTIC_REPOSITORY snapshots
 ```
 
+![alt text](https://raw.githubusercontent.com/aberral/gdrivebu/master/backup.png)
+
 
 ## Deleting old backups
 
@@ -99,8 +101,6 @@ In this example, we will keep 30 days of backups, but you can change the below n
 ```{bash}
 sudo restic -r $RESTIC_REPOSITORY forget --keep-last 30 --prune
 ```
-![alt text](https://raw.githubusercontent.com/aberral/gdrivebu/master/backup.png)
-
 ## Automating your backups
 
 Here is my very simple shell script that runs every night. It back ups my directories and enforces the policies for old backups.
