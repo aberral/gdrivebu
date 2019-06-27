@@ -88,6 +88,8 @@ restic will open the repository with the password we created from our /etc/profi
 To see your backups/snapshots, run the below command.
 ```{bash}
 sudo restic -r $RESTIC_REPOSITORY snapshots
+#
+sudo restic -r /mnt/drive/restic snapshots
 ```
 
 ![alt text](https://raw.githubusercontent.com/aberral/gdrivebu/master/backup.png)
