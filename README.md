@@ -1,4 +1,8 @@
-# SI FALLA MIRAR QUE NO ESTEN 20 PROCESOS ABIERTOS EN HTOP (OCAML...) 
+# SI FALLA MIRAR QUE NO ESTEN 20 PROCESOS ABIERTOS EN HTOP (OCAML...)
+# SI AL MIRAR LOS SNAPSHOTS CON: sudo restic -r /mnt/drive/restic snapshots no esta montado el repo,
+EJECUTAR: sudo google-drive-ocamlfuse -headless -label drive.... etc. mirar en el historial de comandos. y volver a comprobar el primer comando a ver si ha funcionado.
+<!--- sudo google-drive-ocamlfuse -headless -label drive -id 562134888564-pl42cq9fc1hjlm4ap1rddvfjoe1u09b5.apps.googleusercontent.com -secret -FQT-4gxhaErMyd3HDMzNt_G /mnt/drive --->
+
 # USAR SUDO -S PARA ACCEDER A LOS FICHEROS POR NAUTILUS
 # NO DESMONTAR /MNT/DRIVE
 
