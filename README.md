@@ -140,13 +140,6 @@ Ensure that your script is executable by running below command. Otherwise the cr
 chmod +x /home/backups/backup.sh
 ```
 
-# Final words
-
-restic is incredibly robust and reliable. The possibilites are endless. It would not require much configuration to perform hot backups of a MySQL database which can be sent to a Google Drive along with the before mentioned folders.
-
-Let me know how you work with restic! I would love to hear if this tutorial has helped you in any way!
-Leave a comment 🙂
-
 # Credits
 
 https://jakobkofod.com/automated-restic-backups-google-drive/
